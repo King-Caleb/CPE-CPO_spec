@@ -1,0 +1,204 @@
+This document is the specification of the CalamOS Portable Executable Format used
+in the CalamOS Operating system. CalamOS Portable Executable can also be
+referenced as CPE.
+
+NUMBERS (All in little-endian)
+| Type | Size | Description                                             |
+| ---- | ---- | ------------------------------------------------------- |
+| u8   | 1    | Unsigned 8-bit integer                                  |
+| u16  | 2    | Unsigned 16-bit integer, little-endian                  |
+| u32  | 4    | Unsigned 32-bit integer, little-endian                  |
+| u64  | 8    | Unsigned 64-bit integer, little-endian                  |
+| i32  | 4    | Signed 32-bit integer (two’s complement), little-endian |
+| i64  | 8    | Signed 64-bit integer (two’s complement), little-endian |
+| f32  | 4    | 32-bit float, IEEE 754, little-endian                   |
+| f64  | 8    | 64-bit float, IEEE 754, little-endian                   |
+
+
+
+1. CPE FILE LAYOUT:
++----------------------+----------------------+----------------------+----------------------+
+| HEADER               | SIGNATURE            | CODE                 | MINI DISK            |
++----------------------+----------------------+----------------------+----------------------+
+
+1.1 HEADER
+| Field                    | Type    | Description                                                                 |
+| ------------------------ | ------- | --------------------------------------------------------------------------- |
+| Magic                    | 4 bytes | `b"CMOS"` to identify file as CPE                                           |
+| Version                  | 1 byte  | Major version of format                                                     |
+| ARCH                     | 4 bytes | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
+| Flags                    | 1 byte  | Bitflags for execution properties (e.g., require mini-disk lock, read-only) |
+| Reserved                 | 2 bytes | Alignment / future use                                                      |
+| Header Size              | 4 bytes | Total size of header in bytes                                               |
+| Mini Disk Size           | 4 bytes | Number of bytes allocated to the mini-disk                                  |
+| Entry Point Offset       | 4 bytes | Offset (from CODE start) where execution begins                             |
+| Optional Metadata Offset | 4 bytes | Offset from start of file to SIGNATURE section (optional, can be 0)         |
+
+Notes:
+- Mini Disk Size = number of bytes reserved for mini-disk storage.
+- Entry Point Offset allows the loader to jump directly to code in CODE section.
+- Header is aligned to 32 bytes.
+
+ARCH:
+  Mappings for current ARCHS:
+    8664: x86_64
+    _ARM: ARM
+    AR64: ARM 64
+    RSPI: Rasberry PI
+    APPL: Apple
+
+
+1.2 SIGNATURE / METADATA
+| Field                      | Type     | Description                                          |
+| -------------------------- | -------- | ---------------------------------------------------- |
+| Author Length              | 4 bytes  | Length in bytes of author string                     |
+| Author Name                | variable | UTF-8 encoded string                                 |
+| Author Site Length         | 4 bytes  | Length in bytes of author website / contact string   |
+| Author Site Name           | variable | UTF-8 encoded string                                 |
+| Hash / Checksum (optional) | 4 bytes  | Simple CRC32 of CODE + MINI DISK to verify integrity |
+
+Notes:
+- SIGNATURE can be skipped if Optional Metadata Offset = 0.
+- Loader may verify checksum before execution.
+
+1.3 CODE SECTION
+| Field            | Type     | Description                                                                |
+| ---------------- | -------- | ---------------------------------------------------------------------------|
+| Raw Machine Code | variable | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
+| Alignment        | optional | Pad to 16 or 32 bytes for CPU instruction alignment                        |
+
+Execution Rules:
+- Kernel maps CODE into user memory at runtime.
+- CODE should not write outside allocated memory.
+- Execution starts at Entry Point Offset.
+
+1.4 MINI DISK SECTION
+| Field              | Type     | Description                                                  |
+| ------------------ | -------- | ------------------------------------------------------------ |
+| Persistent Storage | variable | RAM buffer of size `Mini Disk Size` allocated at runtime     |
+| Lock / Mutex       | 1 byte   | Indicates whether mini-disk is in use (0 = free, 1 = locked) |
+
+Rules:
+- Exclusive Access: Only one instance of the program can access the mini-disk at a time.
+- Kernel enforces this via a lock associated with the file.
+- Any other instances attempting to access the mini-disk are blocked or receive an error.
+- Persistence: Mini-disk lives in kernel-managed memory. Optional: can be backed to Cmos:\data\ on program exit for persistence between boots.
+
+APIs to Access Mini-Disk:
+fn cpe_minidisk_read(offset: usize, buffer: &mut [u8]) -> Result<usize, Error>;
+fn cpe_minidisk_write(offset: usize, data: &[u8]) -> Result<usize, Error>;
+fn cpe_minidisk_lock() -> Result<(), Error>;   // returns error if already locked
+fn cpe_minidisk_unlock();
+
+2. Execution Model
+
+  1. Loading
+
+    - Kernel maps the CPE into memory.
+
+    - Reads HEADER to verify Magic = "CMOS".
+
+    - Allocates mini-disk buffer in kernel memory of Mini Disk Size.
+
+    - Optional: verify checksum in SIGNATURE section.
+
+  2. Mini-Disk Locking
+
+    - Before accessing mini-disk, the kernel acquires the exclusive lock.
+
+    - If already locked by another instance, the kernel either:
+
+    - blocks the new process until lock released, or
+
+    - returns CPE_ERROR_MINIDISK_BUSY.
+
+  3. Code Execution
+
+    - Kernel sets up user stack and execution context.
+
+    - Jumps to Entry Point Offset inside CODE section.
+
+  4. Syscall / I/O
+
+    - User code interacts with kernel for:
+
+    - File I/O (Cmos:\ namespace)
+
+    - Mini-disk access
+
+    - Standard kernel services
+
+  5. Termination
+
+    - Mini-disk lock released.
+
+    - Optional: mini-disk flushed to disk storage.
+
+    - abort method in code section called
+
+3. Kernel Responsibilities
+
+  1. Maintain a registry of active mini-disks: map CPE file → lock → memory buffer.
+
+  2. Provide VFS namespace:
+
+    - Cmos:\sys_apps\<program> → CPE binary
+
+    - Cmos:\sys_apps\<program>\md → persistent mini-disk
+
+  3. Handle single-instance enforcement:
+
+    - Use atomic lock per CPE in kernel memory.
+
+  4. Expose syscalls for:
+
+    - Mini-disk read/write
+
+    - Executable launch (exec_cpe)
+
+    - Query CPE metadata
+
+
+4. Syscalls:
+  # note, args are ordered like this unleess the spec says otherwise:
+    N  | 64 bit | 32 bit | ARM32 | ARM64 | A cpu you just made up |
+    --------------------------------------------------------------|
+    1. | rcx    | ecx    | R0    | X0    | First arg reg          |
+    2. | rdx    | edx    | R1    | X1    | Second arg reg         |
+    3. | rdi    | edi    | R2    | X2    | Third arg reg          |
+    ret| rax    | eax    | R0    | X0    | Return reg             |
+
+  Syscalls, invoked by 0F 05 are listed here by their value in r9:
+  | R9 | Name           | Category       | Arguments / Notes                                                          |
+  | -- | -------------- | -------------- | -------------------------------------------------------------------------- |
+  | 0  | exit           | Process        | 1. = exit code                                                            |
+  | 1  | stdout         | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB color ptr                    |
+  | 2  | stdin          | I/O / Input    | Optional style in 1., result in RAX                                       |
+  | 3  | createWindow   | GUI            | 1. = width, 2. = height, optional style in 3.                           |
+  | 4  | drawPoint      | GUI            | 1. = ptr to point {x,y}, 2. = color                                      |
+  | 5  | drawLine       | GUI            | Points on top of stack; lines drawn and filled with color 2.              |
+  | 6  | malloc         | Memory         | 1. = size, RAX = ptr to block, hash generated for safety                  |
+  | 7  | dealloc        | Memory         | 1. = ptr, 2. = hash, RAX = bool success/fail                             |
+  | 8  | wipeScreen     | GUI            | 1. = ptr to screen, 2. = ptr to ARGB color                               |
+  | 9  | playMP3        | Multimedia     | 1. = ptr to MP3 path string                                               |
+  | 10 | playWAV        | Multimedia     | 1. = ptr to WAV path string                                               |
+  | 11 | playSamples    | Multimedia     | 1. = number of samples, top of stack = sample data                        |
+  | 12 | getFile        | File I/O       | 1. = path, 2. = format (bytes/text), 3. = memory location to dump file  |
+  | 13 | writeFile      | File I/O       | 1. = path, 2. = format, 3. = memory location to replace file            |
+  | 14 | appendFile     | File I/O       | 1. = path, 2. = format, 3. = memory location to append to file          |
+  | 15 | getTime        | Time           | RAX = timestamp in milliseconds since boot                                 |
+  | 16 | sleep          | Time / Process | 1. = milliseconds to sleep                                                |
+  | 17 | fork           | Process        | RAX = PID of new process                                                   |
+  | 18 | waitPID        | Process        | 1. = PID, RAX = exit code of child process                                |
+  | 19 | kill           | Process        | 1. = PID, RAX = 0 success, non-zero = error                               |
+  | 20 | getPID         | Process        | RAX = current process ID                                                   |
+  | 21 | createThread   | Threading      | 1. = ptr to entry function, 2. = stack size, RAX = thread handle         |
+  | 22 | joinThread     | Threading      | 1. = thread handle, blocks until thread terminates                        |
+  | 23 | socket         | Networking     | 1. = protocol (TCP/UDP), RAX = socket handle                              |
+  | 24 | connect        | Networking     | 1. = socket handle, 2. = ptr to sockaddr, RAX = 0 success                |
+  | 25 | send           | Networking     | 1. = socket handle, 2. = ptr to data, 3. = size, RAX = bytes sent       |
+  | 26 | recv           | Networking     | 1. = socket handle, 2. = ptr to buffer, 3. = size, RAX = bytes received |
+  | 27 | closeSocket    | Networking     | 1. = socket handle, RAX = 0 success, non-zero = error                     |
+  | 28 | mapMemory      | Memory         | 1. = ptr hint, 2. = size, 3. = flags, RAX = mapped ptr                  |
+  | 29 | unmapMemory    | Memory         | 1. = ptr, 2. = size, RAX = 0 success                                     |               |
+  | 30 | drawRectangle  | GUI            | 1. = window handle, 2. = ptr to rect {x,y,w,h}, 3. = color              |

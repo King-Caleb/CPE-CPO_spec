@@ -1,0 +1,87 @@
+Below is the Official CalamOS Portable Object (CPO) format compatible with the Clos Build Toolchain (CBT):
+
+1. High level overveiw:
++-----------------+-----------------+------------------+
+| HEADER          | SECTIONS        | SYMBOL TABLE     |
++-----------------+-----------------+------------------+
+
+- HEADER: identifies the file as CPO, version, target architecture
+- SECTIONS: CODE, CONST, VAR other optional sections
+- SYMBOL TABLE: labels, externs, global symbols
+
+2. HEADER (fixed size, 32 bytes aligned)
+| Field               | Type    | Description                            |
+| ------------------- | ------- | -------------------------------------- |
+| Magic               | 4 bytes | `"CPO\0"`                              |
+| Version             | 1 byte  | e.g., `1`                              |
+| Target ARCH         | 4 bytes | e.g., `8664` for x86_64                |
+| Flags               | 1 byte  | Reserved or future use                 |
+| Reserved            | 2 bytes | Alignment / future use                 |
+| Header Size         | 4 bytes | Total size of header                   |
+| Code Section Size   | 4 bytes | Bytes in CODE section                  |
+| Data Section Size   | 4 bytes | Bytes in CONST and VAR sections        |
+| Symbol Table Offset | 4 bytes | Offset from file start to SYMBOL TABLE |
+
+Notes:
+- All integers in little-endian
+- Align header to 32 bytes
+
+3. Sections
+  3.1 CODE Section
+
+    - FOO: indecates a function. In this case, one called FOO (unmangled)
+    - functions contain machine code or call API_FUNC (replace API_FUNC with the unmangled name of the API function)
+    - 
+
+  3.2 CONST Section
+
+   - Constants from .const:
+   - Constants are stored as:
+    NAME TYPE VALUE
+
+  3.2 VAR Section
+
+   - Variables from .var:
+   - Variables are stored as:
+    NAME TYPE [OPTIONAL VALUE]
+
+4. Symbol Table
+| Field            | Type     | Description                             |
+| ---------------- | -------- | --------------------------------------- |
+| Symbol Count     | 4 bytes  | Number of symbols                       |
+| For each symbol: |          |                                         |
+| Name Length      | 4 bytes  | Length of symbol name                   |
+| Name             | variable | UTF-8 string                            |
+| Type             | 1 byte   | 0 = local, 1 = global, 2 = extern       |
+| Section          | 1 byte   | 0 = code, 1 = data                      |
+| Location         | variable | which file the linker should go in      |
+|                  |          | search for that symbol at link time     |
+
+Notes:
+- Extern symbols have offset/size = 0
+- Global symbols marked for linker entry points
+
+5. CPO Usage Flow
+
+  1. Assembler reads .asm → tokenizes, resolves constants and labels
+
+  2. Assembler emits CPO:
+
+    - HEADER (with section sizes)
+    - CODE section (machine code)
+    - DATA section (.const strings)
+    - SYMBOL TABLE (labels, globals, externs)
+
+  3 Linker reads CPO:
+
+    - Resolves externs
+    - Combines multiple CPO files
+    - Generates final .cxe
+
+6. Advantages of This CPO Format
+
+  - Keeps assembler output small and structured
+  - Allows linker to handle multiple object files
+  - Easy to extend (new sections, debug info, relocations)
+  - Mirrors traditional object file concepts (like ELF or COFF) but simpler
+
