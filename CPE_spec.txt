@@ -162,7 +162,7 @@ Rules:
     3. | rdi    | edi    | R2    | X2    | Third arg reg          |
     ret| rax    | eax    | R0    | X0    | Return reg             |
 
- | R9 | Name         | Category       | Arguments / Notes                                                       |
+| RAX| Name         | Category       | Arguments / Notes                                                       |
 | -- | ------------ | -------------- | ----------------------------------------------------------------------- |
 | 0  | exit         | Process        | 1. = exit code                                                          |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour ptr                    |
@@ -194,4 +194,5 @@ Rules:
 | 27 | closeSocket  | Networking     | 1. = socket handle, RAX = 0 success, non-zero = error                   |
 | 28 | mapMemory    | Memory         | 1. = ptr hint, 2. = size, 3. = flags, RAX = mapped ptr                  |
 | 29 | unmapMemory  | Memory         | 1. = ptr, 2. = size, RAX = 0 success                                    |
+
 
