@@ -75,7 +75,7 @@ Execution Rules:
 | ------------------ | --------------- | ------------------------------------------------------------ |
 | Lock / Mutex       | 1 byte          | Indicates whether mini-disk is in use (0 = free, 1 = locked) |
 | Backup file len    | 4 bytes         | length of the backup file's name                             |
-| Backup file        | 64 bit pointer  | backup file name                                             |
+| Backup file        | variable        | backup file name                                             |
 
 Rules:
 - Exclusive Access: Only one instance of the program can access the mini-disk at a time.
@@ -167,32 +167,3 @@ Rules:
 | 0  | exit         | Process        | 1. = exit code                                                          |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour ptr                    |
 | 2  | stdin        | I/O / Input    | Optional style in 1., result in RAX                                     |
-| 3  | createWindow | GUI            | 1. = width, 2. = height, optional style in 3.                           |
-| 4  | drawPoint    | GUI            | 1. = ptr to point {x,y}, 2. = colour                                     |
-| X  | flipBuffer   | GUI            | 1. = window handle                                                      |
-| Y  | closeWindow  | GUI            | 1. = window handle                                                      |
-| 6  | malloc       | Memory         | 1. = size, RAX = ptr to block, hash generated for safety                |
-| 7  | dealloc      | Memory         | 1. = ptr, 2. = hash, RAX = bool success/fail                            |
-| 9  | playMP3      | Multimedia     | 1. = ptr to MP3 path string                                             |
-| 10 | playWAV      | Multimedia     | 1. = ptr to WAV path string                                             |
-| 11 | playSamples  | Multimedia     | 1. = number of samples, top of stack = sample data                      |
-| 12 | getFile      | File I/O       | 1. = path, 2. = format (bytes/text), 3. = memory location to dump file  |
-| 13 | writeFile    | File I/O       | 1. = path, 2. = format, 3. = memory location to replace file            |
-| 14 | appendFile   | File I/O       | 1. = path, 2. = format, 3. = memory location to append to file          |
-| 15 | getTime      | Time           | RAX = timestamp in milliseconds since boot                              |
-| 16 | sleep        | Time / Process | 1. = milliseconds to sleep                                              |
-| 17 | fork         | Process        | RAX = PID of new process                                                |
-| 18 | waitPID      | Process        | 1. = PID, RAX = exit code of child process                              |
-| 19 | kill         | Process        | 1. = PID, RAX = 0 success, non-zero = error                             |
-| 20 | getPID       | Process        | RAX = current process ID                                                |
-| 21 | createThread | Threading      | 1. = ptr to entry function, 2. = stack size, RAX = thread handle        |
-| 22 | joinThread   | Threading      | 1. = thread handle, blocks until thread terminates                      |
-| 23 | socket       | Networking     | 1. = protocol (TCP/UDP), RAX = socket handle                            |
-| 24 | connect      | Networking     | 1. = socket handle, 2. = ptr to sockaddr, RAX = 0 success               |
-| 25 | send         | Networking     | 1. = socket handle, 2. = ptr to data, 3. = size, RAX = bytes sent       |
-| 26 | recv         | Networking     | 1. = socket handle, 2. = ptr to buffer, 3. = size, RAX = bytes received |
-| 27 | closeSocket  | Networking     | 1. = socket handle, RAX = 0 success, non-zero = error                   |
-| 28 | mapMemory    | Memory         | 1. = ptr hint, 2. = size, 3. = flags, RAX = mapped ptr                  |
-| 29 | unmapMemory  | Memory         | 1. = ptr, 2. = size, RAX = 0 success                                    |
-
-
