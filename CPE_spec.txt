@@ -27,25 +27,21 @@ NUMBERS (All in little-endian)
 | Magic                    | 4 bytes | `b"CMOS"` to identify file as CPE                                           |
 | Version                  | 1 byte  | Major version of format                                                     |
 | ARCH                     | 4 bytes | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
-| Flags                    | 1 byte  | Bitflags for execution properties (e.g., require mini-disk lock, read-only) |
-| Reserved                 | 2 bytes | Alignment / future use                                                      |
-| Header Size              | 4 bytes | Total size of header in bytes                                               |
 | Mini Disk Size           | 4 bytes | Number of bytes allocated to the mini-disk                                  |
 | Entry Point Offset       | 4 bytes | Offset (from CODE start) where execution begins                             |
-| Optional Metadata Offset | 4 bytes | Offset from start of file to SIGNATURE section (optional, can be 0)         |
 
 Notes:
 - Mini Disk Size = number of bytes reserved for mini-disk storage.
 - Entry Point Offset allows the loader to jump directly to code in CODE section.
-- Header is aligned to 32 bytes.
+- Header is to 29 bytes.
 
 ARCH:
   Mappings for current ARCHS:
     8664: x86_64
+    __86: x86 (32 bit)
     _ARM: ARM
     AR64: ARM 64
-    RSPI: Rasberry PI
-    APPL: Apple
+    APPL: Apple silicon
 
 
 1.2 SIGNATURE / METADATA
@@ -55,7 +51,7 @@ ARCH:
 | Author Name                | variable | UTF-8 encoded string                                 |
 | Author Site Length         | 4 bytes  | Length in bytes of author website / contact string   |
 | Author Site Name           | variable | UTF-8 encoded string                                 |
-| Hash / Checksum (optional) | 4 bytes  | Simple CRC32 of CODE + MINI DISK to verify integrity |
+| Authour Hash               | 4 bytes  | ID of the authour (pls don't misuse this)            |
 
 Notes:
 - SIGNATURE can be skipped if Optional Metadata Offset = 0.
@@ -64,8 +60,10 @@ Notes:
 1.3 CODE SECTION
 | Field            | Type     | Description                                                                |
 | ---------------- | -------- | ---------------------------------------------------------------------------|
+| Symbol table len | 4 bytes  | Length of the symbol table                                                 |
+| Symbol table     | variable | where symbols are. name_len, name, code offset, ...conintue...             |
 | Raw Machine Code | variable | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
-| Alignment        | optional | Pad to 16 or 32 bytes for CPU instruction alignment                        |
+| padding          | variable | 0x00 until total code section is a multiple of 16                          |
 
 Execution Rules:
 - Kernel maps CODE into user memory at runtime.
@@ -73,10 +71,11 @@ Execution Rules:
 - Execution starts at Entry Point Offset.
 
 1.4 MINI DISK SECTION
-| Field              | Type     | Description                                                  |
-| ------------------ | -------- | ------------------------------------------------------------ |
-| Persistent Storage | variable | RAM buffer of size `Mini Disk Size` allocated at runtime     |
-| Lock / Mutex       | 1 byte   | Indicates whether mini-disk is in use (0 = free, 1 = locked) |
+| Field              | Type            | Description                                                  |
+| ------------------ | --------------- | ------------------------------------------------------------ |
+| Lock / Mutex       | 1 byte          | Indicates whether mini-disk is in use (0 = free, 1 = locked) |
+| Backup file len    | 4 bytes         | length of the backup file's name                             |
+| Backup file        | 64 bit pointer  | backup file name                                             |
 
 Rules:
 - Exclusive Access: Only one instance of the program can access the mini-disk at a time.
@@ -84,11 +83,6 @@ Rules:
 - Any other instances attempting to access the mini-disk are blocked or receive an error.
 - Persistence: Mini-disk lives in kernel-managed memory. Optional: can be backed to Cmos:\data\ on program exit for persistence between boots.
 
-APIs to Access Mini-Disk:
-fn cpe_minidisk_read(offset: usize, buffer: &mut [u8]) -> Result<usize, Error>;
-fn cpe_minidisk_write(offset: usize, data: &[u8]) -> Result<usize, Error>;
-fn cpe_minidisk_lock() -> Result<(), Error>;   // returns error if already locked
-fn cpe_minidisk_unlock();
 
 2. Execution Model
 
@@ -200,3 +194,4 @@ fn cpe_minidisk_unlock();
 | 27 | closeSocket  | Networking     | 1. = socket handle, RAX = 0 success, non-zero = error                   |
 | 28 | mapMemory    | Memory         | 1. = ptr hint, 2. = size, 3. = flags, RAX = mapped ptr                  |
 | 29 | unmapMemory  | Memory         | 1. = ptr, 2. = size, RAX = 0 success                                    |
+
