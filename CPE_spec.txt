@@ -29,19 +29,20 @@ NUMBERS (All in little-endian)
 | ARCH                     | 4 bytes | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
 | Mini Disk Size           | 4 bytes | Number of bytes allocated to the mini-disk                                  |
 | Entry Point Offset       | 4 bytes | Offset (from CODE start) where execution begins                             |
+| Signed?                  | 1 byte  | If the signature is present                                                 |
 
 Notes:
 - Mini Disk Size = number of bytes reserved for mini-disk storage.
 - Entry Point Offset allows the loader to jump directly to code in CODE section.
-- Header is to 29 bytes.
+- Header is 18 bytes.
 
-ARCH:
-  Mappings for current ARCHS:
-    8664: x86_64
-    __86: x86 (32 bit)
-    _ARM: ARM
-    AR64: ARM 64
-    APPL: Apple silicon
+ARCH: 4-byte ASCII identifier, no null terminator.
+Values:
+    "8664": x86_64
+    "__86": x86 (32 bit)
+    "_ARM": ARM
+    "AR64": ARM 64
+    "APPL": Apple silicon
 
 
 1.2 SIGNATURE / METADATA
@@ -53,9 +54,7 @@ ARCH:
 | Author Site Name           | variable | UTF-8 encoded string                                 |
 | Authour Hash               | 4 bytes  | ID of the authour (pls don't misuse this)            |
 
-Notes:
-- SIGNATURE can be skipped if Optional Metadata Offset = 0.
-- Loader may verify checksum before execution.
+- SIGNATURE can be skipped if Signed = 0.
 
 1.3 CODE SECTION
 | Field            | Type     | Description                                                                |
@@ -90,7 +89,7 @@ Rules:
 
     - Kernel maps the CPE into memory.
 
-    - Reads HEADER to verify Magic = "CMOS".
+    - Reads HEADER to verify Magic = "KAOS".
 
     - Allocates mini-disk buffer in kernel memory of Mini Disk Size.
 
@@ -116,7 +115,7 @@ Rules:
 
     - User code interacts with kernel for:
 
-    - File I/O (Cmos:\ namespace)
+    - File I/O (kaos:\dir\file)
 
     - Mini-disk access
 
@@ -167,4 +166,5 @@ Rules:
 | 0  | exit         | Process        | 1. = exit code                                                          |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour                       |
 | 2  | stdin        | I/O / Input    | Optional style in 1., result in ret                                     |
+
 
