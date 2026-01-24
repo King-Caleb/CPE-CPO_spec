@@ -48,8 +48,7 @@ Values:
 1.2 SIGNATURE / METADATA
 | Field                      | Type     | Description                                          |
 | -------------------------- | -------- | ---------------------------------------------------- |
-| Author Length              | 4 bytes  | Length in bytes of author string                     |
-| Author Name                | variable | UTF-8 encoded string                                 |
+| Author Name                | variable | UTF-8 encoded null terminated string                 |
 | Author Site Length         | 4 bytes  | Length in bytes of author website / contact string   |
 | Author Site Name           | variable | UTF-8 encoded string                                 |
 | Authour Hash               | 4 bytes  | ID of the authour (pls don't misuse this)            |
@@ -59,7 +58,7 @@ Values:
 1.3 CODE SECTION
 | Field            | Type     | Description                                                                |
 | ---------------- | -------- | ---------------------------------------------------------------------------|
-| Symbol table len | 4 bytes  | Length of the symbol table                                                 |
+| Symbol table len | 4 bytes  | Length of the symbol table in entries                                      |
 | Symbol table     | variable | where symbols are. name_len, name, code offset, ...conintue...             |
 | Raw Machine Code | variable | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
 | padding          | variable | 0x00 until total code section is a multiple of 16                          |
@@ -67,8 +66,7 @@ Values:
 TYPES OF SYMBOL TABLE VALUES
 | Value         | Type     | Size     | Description                                  |
 |---------------|----------|----------|----------------------------------------------|
-| name_len      | integer  | 4 bytes  | lentgh of the name feild                     |
-| name          | string   | variable | name of the symbol                           |
+| name          | string   | variable | null terminated UTF8 name of the symbol      |
 | code offset   | integer  | 8 bytes  | offset of the symbol in the Raw machine code |
 
 Execution Rules:
@@ -79,9 +77,7 @@ Execution Rules:
 1.4 MINI DISK SECTION
 | Field              | Type            | Description                                                  |
 | ------------------ | --------------- | ------------------------------------------------------------ |
-| Lock / Mutex       | 1 byte          | Indicates whether mini-disk is in use (0 = free, 1 = locked) |
-| Backup file len    | 4 bytes         | length of the backup file's name                             |
-| Backup file        | variable        | backup file name                                             |
+| Backup file        | variable        | backup file null terminated UTF8 name                        |
 
 Rules:
 - Exclusive Access: Only one instance of the program can access the mini-disk at a time.
@@ -173,6 +169,7 @@ Rules:
 | 0  | exit         | Process        | 1. = exit code                                                          |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour                       |
 | 2  | stdin        | I/O / Input    | Optional style in 1., result in ret                                     |
+
 
 
 
