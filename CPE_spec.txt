@@ -165,5 +165,6 @@ Rules:
 | RAX| Name         | Category       | Arguments / Notes                                                       |
 | -- | ------------ | -------------- | ----------------------------------------------------------------------- |
 | 0  | exit         | Process        | 1. = exit code                                                          |
-| 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour ptr                    |
-| 2  | stdin        | I/O / Input    | Optional style in 1., result in RAX                                     |
+| 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour                       |
+| 2  | stdin        | I/O / Input    | Optional style in 1., result in ret                                     |
+
