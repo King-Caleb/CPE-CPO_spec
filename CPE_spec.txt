@@ -13,6 +13,13 @@ NUMBERS (All in little-endian)
 | i64  | 8    | Signed 64-bit integer (two’s complement), little-endian |
 | f32  | 4    | 32-bit float, IEEE 754, little-endian                   |
 | f64  | 8    | 64-bit float, IEEE 754, little-endian                   |
+| bool | 1    | 1 = true, 0 = false                                     |
+| str4 | 4    | 4 byte non null terminated string                       |
+| str  | ?    | null terminated UTF8 string                             |
+| map  | ?    | key : value, key : value, ...                           |
+| vec  | ?    | val, val, val, val, ....                                |
+| isz  | ?    | i32 on 32 bit and i64 on 64 bit                         |
+| usz  | ?    | u32 on 32 bit and u64 on 64 bit                         |
 
 
 
@@ -24,12 +31,12 @@ NUMBERS (All in little-endian)
 1.1 HEADER
 | Field                    | Type    | Description                                                                 |
 | ------------------------ | ------- | --------------------------------------------------------------------------- |
-| Magic                    | 4 bytes | `b"KAOS"` to identify file as CPE                                           |
-| Version                  | 1 byte  | Major version of format                                                     |
-| ARCH                     | 4 bytes | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
-| Mini Disk Size           | 4 bytes | Number of bytes allocated to the mini-disk                                  |
-| Entry Point Offset       | 4 bytes | Offset (from CODE start) where execution begins                             |
-| Signed?                  | 1 byte  | If the signature is present                                                 |
+| Magic                    | str4    | `b"KAOS"` to identify file as CPE                                           |
+| Version                  | u8      | Major version of format                                                     |
+| ARCH                     | str4    | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
+| Mini Disk Size           | u32     | Number of bytes allocated to the mini-disk                                  |
+| Entry Point Offset       | u32     | Offset (from CODE start) where execution begins                             |
+| Signed?                  | bool    | If the signature is present                                                 |
 
 Notes:
 - Mini Disk Size = number of bytes reserved for mini-disk storage.
@@ -48,26 +55,25 @@ Values:
 1.2 SIGNATURE / METADATA
 | Field                      | Type     | Description                                          |
 | -------------------------- | -------- | ---------------------------------------------------- |
-| Author Name                | variable | UTF-8 encoded null terminated string                 |
-| Author Site Length         | 4 bytes  | Length in bytes of author website / contact string   |
-| Author Site Name           | variable | UTF-8 encoded string                                 |
-| Authour Hash               | 4 bytes  | ID of the authour (pls don't misuse this)            |
+| Author Name                | str      | name of the author                                   |
+| Author Site Name           | str      | site name. example.com is a placeholder              |
+| Authour Hash               | u32      | ID of the authour (pls don't misuse this)            |
 
 - SIGNATURE can be skipped if Signed = 0.
 
 1.3 CODE SECTION
 | Field            | Type     | Description                                                                |
 | ---------------- | -------- | ---------------------------------------------------------------------------|
-| Symbol table len | 4 bytes  | Length of the symbol table in entries                                      |
-| Symbol table     | variable | where symbols are. name_len, name, code offset, ...conintue...             |
-| Raw Machine Code | variable | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
-| padding          | variable | 0x00 until total code section is a multiple of 16                          |
+| Symbol table len | u32      | Length of the symbol table in entries                                      |
+| Symbol table     | map      | where symbols are. name, code offset, ...conintue...                       |
+| Raw Machine Code | vec      | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
+| padding          | vec      | 0x00 until total code section is a multiple of 16                          |
 
 TYPES OF SYMBOL TABLE VALUES
-| Value         | Type     | Size     | Description                                  |
-|---------------|----------|----------|----------------------------------------------|
-| name          | string   | variable | null terminated UTF8 name of the symbol      |
-| code offset   | integer  | 8 bytes  | offset of the symbol in the Raw machine code |
+| Value         | Type     | Description                                  |
+|---------------|----------|----------------------------------------------|
+| name          | str      | null terminated UTF8 name of the symbol      |
+| code offset   | u32      | offset of the symbol in the Raw machine code |
 
 Execution Rules:
 - Kernel maps CODE into user memory at runtime.
@@ -77,13 +83,13 @@ Execution Rules:
 1.4 MINI DISK SECTION
 | Field              | Type            | Description                                                  |
 | ------------------ | --------------- | ------------------------------------------------------------ |
-| Backup file        | variable        | backup file null terminated UTF8 name                        |
+| Backup file        | str             | backup file name                                             |
 
 Rules:
 - Exclusive Access: Only one instance of the program can access the mini-disk at a time.
 - Kernel enforces this via a lock associated with the file.
 - Any other instances attempting to access the mini-disk are blocked or receive an error.
-- Persistence: Mini-disk lives in kernel-managed memory. Optional: can be backed to KAOS:\data\ on program exit for persistence between boots.
+- Persistence: Mini-disk lives on the disk
 
 
 2. Execution Model
@@ -166,9 +172,10 @@ Rules:
 
 | RAX| Name         | Category       | Arguments / Notes                                                       |
 | -- | ------------ | -------------- | ----------------------------------------------------------------------- |
-| 0  | exit         | Process        | 1. = exit code                                                          |
-| 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour                       |
-| 2  | stdin        | I/O / Input    | Optional style in 1., result in ret                                     |
+| 0  | exit         | Process        | 1. = exit code (isz)                                                    |
+| 1  | stdout       | I/O / Display  | 1. = ptr to string (usz), 2. = length (usz), 3. = ARGB colour (u32)     |
+| 2  | stdin        | I/O / Input    | Optional style in 1. (u32), result in ret (usz)                         |
+
 
 
 
