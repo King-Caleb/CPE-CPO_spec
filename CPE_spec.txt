@@ -24,7 +24,7 @@ NUMBERS (All in little-endian)
 1.1 HEADER
 | Field                    | Type    | Description                                                                 |
 | ------------------------ | ------- | --------------------------------------------------------------------------- |
-| Magic                    | 4 bytes | `b"CMOS"` to identify file as CPE                                           |
+| Magic                    | 4 bytes | `b"KAOS"` to identify file as CPE                                           |
 | Version                  | 1 byte  | Major version of format                                                     |
 | ARCH                     | 4 bytes | Your CPU. 8664 for x86, _ARM for arm or whatever your CPU is                |
 | Mini Disk Size           | 4 bytes | Number of bytes allocated to the mini-disk                                  |
@@ -33,7 +33,7 @@ NUMBERS (All in little-endian)
 
 Notes:
 - Mini Disk Size = number of bytes reserved for mini-disk storage.
-- Entry Point Offset allows the loader to jump directly to code in CODE section.
+- Entry Point Offset is relative to the first byte of Raw Machine Code.
 - Header is 18 bytes.
 
 ARCH: 4-byte ASCII identifier, no null terminator.
@@ -64,6 +64,13 @@ Values:
 | Raw Machine Code | variable | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
 | padding          | variable | 0x00 until total code section is a multiple of 16                          |
 
+TYPES OF SYMBOL TABLE VALUES
+| Value         | Type     | Size     | Description                                  |
+|---------------|----------|----------|----------------------------------------------|
+| name_len      | integer  | 4 bytes  | lentgh of the name feild                     |
+| name          | string   | variable | name of the symbol                           |
+| code offset   | integer  | 8 bytes  | offset of the symbol in the Raw machine code |
+
 Execution Rules:
 - Kernel maps CODE into user memory at runtime.
 - CODE should not write outside allocated memory.
@@ -80,7 +87,7 @@ Rules:
 - Exclusive Access: Only one instance of the program can access the mini-disk at a time.
 - Kernel enforces this via a lock associated with the file.
 - Any other instances attempting to access the mini-disk are blocked or receive an error.
-- Persistence: Mini-disk lives in kernel-managed memory. Optional: can be backed to Cmos:\data\ on program exit for persistence between boots.
+- Persistence: Mini-disk lives in kernel-managed memory. Optional: can be backed to KAOS:\data\ on program exit for persistence between boots.
 
 
 2. Execution Model
@@ -115,7 +122,7 @@ Rules:
 
     - User code interacts with kernel for:
 
-    - File I/O (kaos:\dir\file)
+    - File I/O (KAOS:\dir\file)
 
     - Mini-disk access
 
@@ -135,9 +142,9 @@ Rules:
 
   2. Provide VFS namespace:
 
-    - Cmos:\sys_apps\<program> → CPE binary
+    - KAOS:\sys_apps\<program> → CPE binary
 
-    - Cmos:\sys_apps\<program>\md → persistent mini-disk
+    - KAOS:\sys_apps\<program>\md → persistent mini-disk
 
   3. Handle single-instance enforcement:
 
@@ -166,5 +173,6 @@ Rules:
 | 0  | exit         | Process        | 1. = exit code                                                          |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string, 2. = length, 3. = ARGB colour                       |
 | 2  | stdin        | I/O / Input    | Optional style in 1., result in ret                                     |
+
 
 
