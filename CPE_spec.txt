@@ -187,7 +187,8 @@ Rules:
 | -- | ------------ | -------------- | ----------------------------------------------------------------------- |
 | 0  | exit         | Process        | 1. = exit code (isz)                                                    |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string (usz), 2. = length (usz), 3. = ARGB colour (u32)     |
-| 2  | stdin        | I/O / Input    | Optional style in 1. (u32), result in ret (usz)                         |
+| 2  | stdin        | I/O / Input    | Optional style in 1. (u32), Buffer pointer in 2. (u64),                 |
+|    |              |                | charsToRead in 3. (u32) result in ret (usz)                             |
 
 
 
