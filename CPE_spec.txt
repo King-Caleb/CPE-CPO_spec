@@ -45,10 +45,11 @@ all other ARCHS are unsupported
 | Entry Point Offset       | u32     | Offset (from CODE start) where execution begins                             |
 | Signed?                  | bool    | If the signature is present                                                 |
 
+
 Notes:
 - Mini Disk Size = number of bytes reserved for mini-disk storage.
 - Entry Point Offset is relative to the first byte of Raw Machine Code.
-- Header is 18 bytes.
+- Header is 18 bytes, no padding, it is packed.
 
 ARCH: 4-byte ASCII identifier, no null terminator.
 Values:
@@ -71,7 +72,7 @@ Values:
 1.3 CODE SECTION
 | Field            | Type     | Description                                                                |
 | ---------------- | -------- | ---------------------------------------------------------------------------|
-| Symbol table len | u32      | Length of the symbol table in entries                                      |
+| Symbol table len | u32      | Length of the symbol table in entries NOT bytes                            |
 | Symbol table     | map      | where symbols are. name, code offset, ...conintue...                       |
 | Raw Machine Code | vec      | Executable instructions (x86_64 | ARM | whatever CPU you have)             |
 | padding          | vec      | 0x00 until total code section is a multiple of 16                          |
@@ -79,6 +80,7 @@ Values:
 (concrete vec definition) => Raw Machine code is a vec where all of "val" is a u8
 
 if CODE SECTION is already a multiple of 16, add another 16 bytes of 0x00 to make sure it ends in 0x00 AND i a multiple of 16
+No other section has padding.
 
 TYPES OF SYMBOL TABLE VALUES (concrete map definition)
 | Value         | Type     | Description                                  |
@@ -103,7 +105,7 @@ Rules:
 - Kernel enforces this via a lock associated with the file.
 - Any other instances attempting to access the mini-disk are blocked or receive an error.
 - Persistence: Mini-disk lives on the disk
-
+- Accessibility: MiniDisk is RAM allocoted by the kernel that is saved to the backup file once the proccess is terminated
 
 2. Execution Model
 
@@ -114,8 +116,6 @@ Rules:
     - Reads HEADER to verify Magic = "KAOS".
 
     - Allocates mini-disk buffer in kernel memory of Mini Disk Size.
-
-    - Optional: verify checksum in SIGNATURE section.
 
   2. Mini-Disk Locking
 
@@ -189,6 +189,8 @@ Rules:
 | 1  | stdout       | I/O / Display  | 1. = ptr to string (usz), 2. = length (usz), 3. = ARGB colour (u32)     |
 | 2  | stdin        | I/O / Input    | Optional style in 1. (u32), Buffer pointer in 2. (u64),                 |
 |    |              |                | charsToRead in 3. (u32) result in ret (usz)                             |
+| 3  | where_md     | Memory         | returns the pointer of where the Minidisk is as a  pointer to virtual   |
+|    |              |                | memory. No arguments                                                    |
 
 
 
