@@ -226,4 +226,5 @@ Rules:
 | 19 | AllocConsole | I/O            | Creates a new console window and returns its handle as usz              |
 | 20 | MkConsCurrent| I/O            | Makes the console handle 1. (usz) the current console and returns true  |
 |    |              |                | If successful, otherwise false (bool)                                   |
+| 21 | ClearConsole | I/O            | Clears the current console's contents                                   |
 
