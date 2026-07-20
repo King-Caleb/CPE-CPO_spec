@@ -223,5 +223,7 @@ Rules:
 |    |              |                | (bool) is true, otherwise it will be a sibling                          |
 | 18 | KillProc     | Proccess       | Kills the proccess with PID 1. (usz) but only for child proccesses or   |
 |    |              |                | Ones with a lower permision level                                       |
-
+| 19 | AllocConsole | I/O            | Creates a new console window and returns its handle as usz              |
+| 20 | MkConsCurrent| I/O            | Makes the console handle 1. (usz) the current console and returns true  |
+|    |              |                | If successful, otherwise false (bool)                                   |
 
