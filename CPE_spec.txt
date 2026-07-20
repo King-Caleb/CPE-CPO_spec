@@ -1,4 +1,4 @@
-This document is the specification of the CalamOS Portable Executable Format used
+This document is the specification of the CalamOS Programable Executable Format used
 in the CalamOS Operating system. CalamOS Portable Executable can also be
 referenced as CPE.
 
