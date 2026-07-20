@@ -20,6 +20,7 @@ NUMBERS (All in little-endian)
 | vec  | ?    | lenthgh specifier thenval, val, val, val, ....  (defined when used)                |
 | isz  | ?    | i32 on 32 bit and i64 on 64 bit                                                    |
 | usz  | ?    | u32 on 32 bit and u64 on 64 bit                                                    |
+| pstr | ?    | a pointer to a str                                                                 |
 
 64 bit or 32 bit is refering to your CPU.
 x86_64 is 64 bit
@@ -187,16 +188,23 @@ Rules:
 | -- | ------------ | -------------- | ----------------------------------------------------------------------- |
 | 0  | exit         | Process        | 1. = exit code (isz)                                                    |
 | 1  | stdout       | I/O / Display  | 1. = ptr to string (usz), 2. = length (usz), 3. = ARGB colour (u32)     |
-| 2  | stdin        | I/O / Input    | Optional style in 1. (u32), Buffer pointer in 2. (u64),                 |
+| 2  | stdin        | I/O / Input    | Optional style in 1. (u32), Buffer pointer in 2. (usz),                 |
 |    |              |                | charsToRead in 3. (u32) result in ret (usz)                             |
-| 3  | where_md     | Memory         | returns the pointer of where the Minidisk is as a  pointer to virtual   |
-|    |              |                | memory. No arguments                                                    |
-
-
-
-
-
-
-
+| 3  | read_md      | Memory         | Reads the MiniDisk from offset arg1 (usz) to arg2 (usz) into buffer     |
+|    |              |                | pointer arg 3 (usz) returns a bool true for success                     |
+| 4  | write_md     | Memory         | Writes into the MiniDisk from offset arg1 (usz) to arg2 (usz) from      |
+|    |              |                | buffer pointer arg 3 (usz) returns a bool true for success              |
+| 5  | valloc       | Memory         | Returns a pointer (usz) to a continuos block of virtual memory arg1     |
+|    |              |                | (usz) bytes long and arg2 (u8) bytes aligned                            |
+| 6  | vdelloc      | Memory         | Frees the pointer in arg1 (usz) returns a bool true for success         |
+| 7  | GetCmdStr    | Process        | writes the command line string launching the proccess into the buffer   |
+|    |              |                | pointer in arg1 (usz)                                                   |
+| 8  | GetFile      | Filesystem     | Returns a file handle to the file in at the filename in arg1 (pstr)     |
+|    |              |                | Returns 0 is unsuccessful                                               |
+| 9  | FreeFile     | Filesystem     | Frees a file handle to the file in at the filename in arg1 (pstr)       |
+|    |              |                | Returns 0 is unsuccessful and 1 for succcess (bool)                     |
+| 10 | StartProc    | Process        | Starts a new Normal proccess from the file handle in arg1 (usz) with    |
+|    |              |                | Commandline string pointer in arg2 (pstr). It will be a child if arg3   |
+|    |              |                | (bool) is true, otherwise it will be a sibling                          |
 
 
