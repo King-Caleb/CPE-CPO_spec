@@ -183,6 +183,7 @@ Rules:
     1. | rcx    | ecx    | R0    | X0    | First arg reg          |
     2. | rdx    | edx    | R1    | X1    | Second arg reg         |
     3. | rdi    | edi    | R2    | X2    | Third arg reg          |
+    4. | rsi    | esi    | R3    | X3    | Fourth arg reg         |
     ret| rax    | eax    | R0    | X0    | Return reg             |
 
 | RAX| Name         | Category       | Arguments / Notes                                                       |
@@ -204,8 +205,23 @@ Rules:
 |    |              |                | Returns 0 is unsuccessful                                               |
 | 9  | FreeFile     | Filesystem     | Frees a file handle to the file in at the filename in arg1 (pstr)       |
 |    |              |                | Returns 0 is unsuccessful and 1 for succcess (bool)                     |
-| 10 | StartProc    | Process        | Starts a new Normal proccess from the file handle in arg1 (usz) with    |
+| 10 | ReadFile     | Filesystem     | Reads the content of the file with the file handle 1. (usz) from index  |
+|    |              |                | 2. (u64) Till index 3. (u64) into buffer pointer 4. (usz)               |
+| 11 | WriteFile    | Filesystem     | Writes to the file with the file handle 1. (usz) from index 2. (u64)    |
+|    |              |                |  Till index 3. (u64) using buffer pointer 4. (usz)                      |
+| 12 | FileLen      | Filesystem     | Returns the length of the file with file handle 1. (usz) as a usz       |
+| 13 | MakeFile     | Filesystem     | Makes a new file at path 1. (pstr) and returns true (bool) if successful|
+|    |              |                | Otherwise false                                                         |
+| 14 | MakeFile     | Filesystem     | Makes a new folder at path 1. (pstr) and returns true (bool) if         |
+|    |              |                | successful Otherwise false                                              |
+| 15 | DelFile      | Filesystem     | Deletes the file at path 1. (pstr) and returns true (bool) if successful|
+|    |              |                | Otherwise false                                                         |
+| 16 | DelFile      | Filesystem     | Deletes the folder at path 1. (pstr) and returns true (bool) if         |
+|    |              |                | successful Otherwise false                                              |
+| 17 | StartProc    | Process        | Starts a new Normal proccess from the file handle in arg1 (usz) with    |
 |    |              |                | Commandline string pointer in arg2 (pstr). It will be a child if arg3   |
 |    |              |                | (bool) is true, otherwise it will be a sibling                          |
+| 18 | KillProc     | Proccess       | Kills the proccess with PID 1. (usz) but only for child proccesses or   |
+|    |              |                | Ones with a lower permision level                                       |
 
 
