@@ -212,11 +212,11 @@ Rules:
 | 12 | FileLen      | Filesystem     | Returns the length of the file with file handle 1. (usz) as a usz       |
 | 13 | MakeFile     | Filesystem     | Makes a new file at path 1. (pstr) and returns true (bool) if successful|
 |    |              |                | Otherwise false                                                         |
-| 14 | MakeFile     | Filesystem     | Makes a new folder at path 1. (pstr) and returns true (bool) if         |
+| 14 | MakeFolder   | Filesystem     | Makes a new folder at path 1. (pstr) and returns true (bool) if         |
 |    |              |                | successful Otherwise false                                              |
 | 15 | DelFile      | Filesystem     | Deletes the file at path 1. (pstr) and returns true (bool) if successful|
 |    |              |                | Otherwise false                                                         |
-| 16 | DelFile      | Filesystem     | Deletes the folder at path 1. (pstr) and returns true (bool) if         |
+| 16 | DelFolder    | Filesystem     | Deletes the folder at path 1. (pstr) and returns true (bool) if         |
 |    |              |                | successful Otherwise false                                              |
 | 17 | StartProc    | Process        | Starts a new Normal proccess from the file handle in arg1 (usz) with    |
 |    |              |                | Commandline string pointer in arg2 (pstr). It will be a child if arg3   |
